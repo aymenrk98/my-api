@@ -1,3 +1,5 @@
+require("dotenv").config(); // load .env
+
 const mongoose = require("mongoose");
 const express = require("express");
 
@@ -5,11 +7,11 @@ const app = express();
 app.use(express.json());
 
 // ✅ Connect to MongoDB
-mongoose.connect("mongodb+srv://aymenrk:aymen123@cluster0.f5onjq1.mongodb.net/mydb?retryWrites=true&w=majority")
+mongoose.connect(process.env.MONGO_URL)
 .then(() => console.log("MongoDB connected ✅"))
 .catch(err => console.log(err));
 
-// ✅ Create schema
+// ✅ Schema
 const rateSchema = new mongoose.Schema({
   from: String,
   to: String,
@@ -23,11 +25,11 @@ app.get("/", (req, res) => {
   res.send("API is working 🚀");
 });
 
-// ✅ GET rate (FROM DATABASE)
+// ✅ GET rate
 app.get("/rate/:from/:to", async (req, res) => {
-  const { from, to } = req.params;
-
   try {
+    const { from, to } = req.params;
+
     const result = await Rate.findOne({ from, to });
 
     if (!result) {
@@ -35,16 +37,18 @@ app.get("/rate/:from/:to", async (req, res) => {
     }
 
     res.json(result);
+
   } catch (error) {
-    res.status(500).json({ error: "Server error" });
+    console.log(error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// ✅ UPDATE / CREATE rate (SAVE TO DATABASE)
+// ✅ UPDATE / CREATE rate
 app.post("/update-rate", async (req, res) => {
-  const { from, to, rate } = req.body;
-
   try {
+    const { from, to, rate } = req.body;
+
     let existing = await Rate.findOne({ from, to });
 
     if (existing) {
@@ -57,11 +61,14 @@ app.post("/update-rate", async (req, res) => {
     res.json({ message: "Rate saved in MongoDB ✅" });
 
   } catch (error) {
-    res.status(500).json({ error: "Error saving rate" });
+    console.log(error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// ✅ Start server
-app.listen(3000, () => {
-  console.log("Server running on port 3000 🚀");
+// ✅ Use dynamic port (IMPORTANT for Render)
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT} 🚀`);
 });
