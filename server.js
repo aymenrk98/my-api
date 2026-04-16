@@ -1,4 +1,4 @@
-require("dotenv").config(); // load .env
+require("dotenv").config();
 
 const mongoose = require("mongoose");
 const express = require("express");
@@ -6,10 +6,10 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
-// ✅ Connect to MongoDB
+// ✅ Connect to MongoDB (FIXED - no old options)
 mongoose.connect(process.env.MONGO_URL)
 .then(() => console.log("MongoDB connected ✅"))
-.catch(err => console.log(err));
+.catch(err => console.log("MongoDB error:", err));
 
 // ✅ Schema
 const rateSchema = new mongoose.Schema({
@@ -41,7 +41,6 @@ app.get("/rate/:from/:to", async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: error.message });
-console.log(error);
   }
 });
 
@@ -67,7 +66,7 @@ app.post("/update-rate", async (req, res) => {
   }
 });
 
-// ✅ Use dynamic port (IMPORTANT for Render)
+// ✅ Dynamic port (important for Render)
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
