@@ -8,7 +8,6 @@ app.use(express.json());
 .then(() => console.log("MongoDB connected ✅"))
 .catch(err => console.log("MongoDB error:", err));
 
-// ✅ Schema
 const rateSchema = new mongoose.Schema({
   from: String,
   to: String,
@@ -68,7 +67,6 @@ const Rate = mongoose.model("Rate", rateSchema);
   }
 });
 
-// ✅ Convert endpoint (for your app)
 app.get("/convert/:from/:to/:amount", async (req, res) => {
   try {
     const { from, to, amount } = req.params;
