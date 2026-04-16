@@ -1,28 +1,46 @@
-const mongoose = require("mongoose");
 const express = require("express");
+const mongoose = require("mongoose");
 
 const app = express();
 app.use(express.json());
 
- mongoose.connect("mongodb+srv://aymenrk:aymen123@cluster0.f5onjq1.mongodb.net/mydb?retryWrites=true&w=majority")
+console.log("🔥 SERVER STARTED");
+
+
+mongoose.connect(
+  "mongodb+srv://aymenrk:aymen123@cluster0.f5onjq1.mongodb.net/mydb?retryWrites=true&w=majority"
+)
 .then(() => console.log("MongoDB connected ✅"))
 .catch(err => console.log("MongoDB error:", err));
 
+
 const rateSchema = new mongoose.Schema({
-  from: String,
-  to: String,
-  rate: Number
+  from: { type: String, required: true },
+  to: { type: String, required: true },
+  rate: { type: Number, required: true }
 });
 
 const Rate = mongoose.model("Rate", rateSchema);
 
- app.get("/", (req, res) => {
-  res.send("API is working ");
+app.get("/", (req, res) => {
+  res.send("API is working 🚀");
 });
 
- app.get("/rate/:from/:to", async (req, res) => {
+app.get("/rates", async (req, res) => {
+  console.log("✅ /rates HIT");
+
   try {
-    const { from, to } = req.params;
+    const rates = await Rate.find();
+    res.json(rates);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/rate/:from/:to", async (req, res) => {
+  try {
+    const from = req.params.from.toUpperCase();
+    const to = req.params.to.toUpperCase();
 
     const result = await Rate.findOne({ from, to });
 
@@ -30,46 +48,50 @@ const Rate = mongoose.model("Rate", rateSchema);
       return res.status(404).json({ error: "Rate not found" });
     }
 
-    res.json({
-      from: result.from,
-      to: result.to,
-      rate: result.rate
-    });
+    res.json(result);
 
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 });
 
- app.post("/update-rate", async (req, res) => {
+
+app.post("/update-rate", async (req, res) => {
   try {
-    const { from, to, rate } = req.body;
+    let { from, to, rate } = req.body;
 
     if (!from || !to || !rate) {
       return res.status(400).json({ error: "Missing data" });
     }
 
-    let existing = await Rate.findOne({ from, to });
+    from = from.toUpperCase();
+    to = to.toUpperCase();
 
-    if (existing) {
-      existing.rate = rate;
-      await existing.save();
-    } else {
-      await Rate.create({ from, to, rate });
-    }
+    await Rate.findOneAndUpdate(
+      { from, to },
+      { rate },
+      { upsert: true, new: true }
+    );
 
-    res.json({ message: "Saved in MongoDB " });
+    res.json({ message: "Saved in MongoDB ✅" });
 
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 });
 
+
 app.get("/convert/:from/:to/:amount", async (req, res) => {
+  console.log("✅ /convert HIT");
+
   try {
-    const { from, to, amount } = req.params;
+    const from = req.params.from.toUpperCase();
+    const to = req.params.to.toUpperCase();
+    const amount = Number(req.params.amount);
+
+    if (isNaN(amount)) {
+      return res.status(400).json({ error: "Amount must be a number" });
+    }
 
     const result = await Rate.findOne({ from, to });
 
@@ -77,24 +99,24 @@ app.get("/convert/:from/:to/:amount", async (req, res) => {
       return res.status(404).json({ error: "Rate not found" });
     }
 
-    const converted = Number(amount) * result.rate;
+    const converted = amount * result.rate;
 
     res.json({
       from,
       to,
-      amount: Number(amount),
+      amount,
       rate: result.rate,
       result: converted
     });
 
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 });
 
-const PORT = process.env.PORT || 3000;
+
+const PORT = 4000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} 🚀`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
