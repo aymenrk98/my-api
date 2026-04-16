@@ -1,5 +1,3 @@
-require("dotenv").config();
-
 const mongoose = require("mongoose");
 const express = require("express");
 
@@ -10,7 +8,8 @@ app.use(express.json());
 .then(() => console.log("MongoDB connected ✅"))
 .catch(err => console.log("MongoDB error:", err));
 
- const rateSchema = new mongoose.Schema({
+// ✅ Schema
+const rateSchema = new mongoose.Schema({
   from: String,
   to: String,
   rate: Number
@@ -18,13 +17,11 @@ app.use(express.json());
 
 const Rate = mongoose.model("Rate", rateSchema);
 
-// ✅ Home route
-app.get("/", (req, res) => {
+ app.get("/", (req, res) => {
   res.send("API is working 🚀");
 });
 
-// ✅ GET rate FROM DATABASE
-app.get("/rate/:from/:to", async (req, res) => {
+ app.get("/rate/:from/:to", async (req, res) => {
   try {
     const { from, to } = req.params;
 
@@ -34,7 +31,11 @@ app.get("/rate/:from/:to", async (req, res) => {
       return res.status(404).json({ error: "Rate not found" });
     }
 
-    res.json(result);
+    res.json({
+      from: result.from,
+      to: result.to,
+      rate: result.rate
+    });
 
   } catch (error) {
     console.log(error);
@@ -42,10 +43,13 @@ app.get("/rate/:from/:to", async (req, res) => {
   }
 });
 
-// ✅ UPDATE / CREATE rate IN DATABASE
-app.post("/update-rate", async (req, res) => {
+ app.post("/update-rate", async (req, res) => {
   try {
     const { from, to, rate } = req.body;
+
+    if (!from || !to || !rate) {
+      return res.status(400).json({ error: "Missing data" });
+    }
 
     let existing = await Rate.findOne({ from, to });
 
@@ -64,7 +68,34 @@ app.post("/update-rate", async (req, res) => {
   }
 });
 
-// ✅ Dynamic port (IMPORTANT for Render)
+// ✅ Convert endpoint (for your app)
+app.get("/convert/:from/:to/:amount", async (req, res) => {
+  try {
+    const { from, to, amount } = req.params;
+
+    const result = await Rate.findOne({ from, to });
+
+    if (!result) {
+      return res.status(404).json({ error: "Rate not found" });
+    }
+
+    const converted = Number(amount) * result.rate;
+
+    res.json({
+      from,
+      to,
+      amount: Number(amount),
+      rate: result.rate,
+      result: converted
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ Dynamic port (important for Render)
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
