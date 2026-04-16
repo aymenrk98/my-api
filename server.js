@@ -17,7 +17,7 @@ const rateSchema = new mongoose.Schema({
 const Rate = mongoose.model("Rate", rateSchema);
 
  app.get("/", (req, res) => {
-  res.send("API is working 🚀");
+  res.send("API is working ");
 });
 
  app.get("/rate/:from/:to", async (req, res) => {
@@ -59,7 +59,7 @@ const Rate = mongoose.model("Rate", rateSchema);
       await Rate.create({ from, to, rate });
     }
 
-    res.json({ message: "Saved in MongoDB ✅" });
+    res.json({ message: "Saved in MongoDB " });
 
   } catch (error) {
     console.log(error);
@@ -93,7 +93,6 @@ app.get("/convert/:from/:to/:amount", async (req, res) => {
   }
 });
 
-// ✅ Dynamic port (important for Render)
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
