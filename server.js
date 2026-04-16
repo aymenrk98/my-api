@@ -4,31 +4,25 @@ const mongoose = require("mongoose");
 const app = express();
 app.use(express.json());
 
-console.log("🔥 SERVER STARTED");
-
-
 mongoose.connect(
   "mongodb+srv://aymenrk:aymen123@cluster0.f5onjq1.mongodb.net/mydb?retryWrites=true&w=majority"
 )
-.then(() => console.log("MongoDB connected ✅"))
-.catch(err => console.log("MongoDB error:", err));
-
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.log(err));
 
 const rateSchema = new mongoose.Schema({
-  from: { type: String, required: true },
-  to: { type: String, required: true },
-  rate: { type: Number, required: true }
+  currency: { type: String, required: true, uppercase: true },
+  buy: { type: Number, required: true },
+  sell: { type: Number, required: true }
 });
 
 const Rate = mongoose.model("Rate", rateSchema);
 
 app.get("/", (req, res) => {
-  res.send("API is working 🚀");
+  res.send("API is working");
 });
 
 app.get("/rates", async (req, res) => {
-  console.log("✅ /rates HIT");
-
   try {
     const rates = await Rate.find();
     res.json(rates);
@@ -37,86 +31,73 @@ app.get("/rates", async (req, res) => {
   }
 });
 
-app.get("/rate/:from/:to", async (req, res) => {
+app.get("/rate/:currency", async (req, res) => {
   try {
-    const from = req.params.from.toUpperCase();
-    const to = req.params.to.toUpperCase();
-
-    const result = await Rate.findOne({ from, to });
+    const currency = req.params.currency.toUpperCase();
+    const result = await Rate.findOne({ currency });
 
     if (!result) {
-      return res.status(404).json({ error: "Rate not found" });
+      return res.status(404).json({ error: "Currency not found" });
     }
 
     res.json(result);
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 app.post("/update-rate", async (req, res) => {
   try {
-    let { from, to, rate } = req.body;
+    let { currency, buy, sell } = req.body;
 
-    if (!from || !to || !rate) {
+    if (!currency || !buy || !sell) {
       return res.status(400).json({ error: "Missing data" });
     }
 
-    from = from.toUpperCase();
-    to = to.toUpperCase();
+    currency = currency.toUpperCase();
 
     await Rate.findOneAndUpdate(
-      { from, to },
-      { rate },
+      { currency },
+      { buy, sell },
       { upsert: true, new: true }
     );
 
-    res.json({ message: "Saved in MongoDB ✅" });
-
+    res.json({ message: "Rate saved" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-
-app.get("/convert/:from/:to/:amount", async (req, res) => {
-  console.log("✅ /convert HIT");
-
+app.get("/convert/:currency/:amount", async (req, res) => {
   try {
-    const from = req.params.from.toUpperCase();
-    const to = req.params.to.toUpperCase();
+    const currency = req.params.currency.toUpperCase();
     const amount = Number(req.params.amount);
 
     if (isNaN(amount)) {
-      return res.status(400).json({ error: "Amount must be a number" });
+      return res.status(400).json({ error: "Invalid amount" });
     }
 
-    const result = await Rate.findOne({ from, to });
+    const rate = await Rate.findOne({ currency });
 
-    if (!result) {
-      return res.status(404).json({ error: "Rate not found" });
+    if (!rate) {
+      return res.status(404).json({ error: "Currency not found" });
     }
-
-    const converted = amount * result.rate;
 
     res.json({
-      from,
-      to,
+      currency,
       amount,
-      rate: result.rate,
-      result: converted
+      buy_price: rate.buy,
+      sell_price: rate.sell,
+      total_buy: amount * rate.buy,
+      total_sell: amount * rate.sell
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
