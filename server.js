@@ -39,6 +39,9 @@ const rateSchema = new mongoose.Schema({
       sell: Number
     }
   }
+
+}, {
+  timestamps: true
 });
 
 const Rate = mongoose.model("Rate", rateSchema);
@@ -48,41 +51,46 @@ app.get("/", (req, res) => {
 });
 
 app.get("/rates", async (req, res) => {
-  try {
-    const rates = await Rate.find();
-    res.json(rates);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  const data = await Rate.find();
+
+  const formatted = data.map(r => {
+    if (r.type === "currency") {
+      return {
+        type: "currency",
+        currency: r.currency,
+        liquide: r.liquide,
+        digital: r.digital,
+        updatedAt: new Date(r.updatedAt).toLocaleString()
+      };
+    }
+
+    if (r.type === "gold") {
+      return {
+        type: "gold",
+        gold: r.gold,
+        updatedAt: new Date(r.updatedAt).toLocaleString()
+      };
+    }
+  });
+
+  res.json(formatted);
 });
 
 app.get("/currency/:code", async (req, res) => {
-  try {
-    const code = req.params.code.toUpperCase();
-    const result = await Rate.findOne({ type: "currency", currency: code });
+  const code = req.params.code.toUpperCase();
+  const rate = await Rate.findOne({ type: "currency", currency: code });
 
-    if (!result) {
-      return res.status(404).json({ error: "Currency not found" });
-    }
+  if (!rate) return res.status(404).json({ error: "Not found" });
 
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.json(rate);
 });
 
 app.get("/gold", async (req, res) => {
-  try {
-    const result = await Rate.findOne({ type: "gold" });
+  const gold = await Rate.findOne({ type: "gold" });
 
-    if (!result) {
-      return res.status(404).json({ error: "Gold not found" });
-    }
+  if (!gold) return res.status(404).json({ error: "Gold not found" });
 
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.json(gold);
 });
 
 app.post("/update-rate", async (req, res) => {
@@ -93,22 +101,41 @@ app.post("/update-rate", async (req, res) => {
       return res.status(400).json({ error: "Type required" });
     }
 
-    let filter = {};
-
     if (data.type === "currency") {
-      data.currency = data.currency.toUpperCase();
-      filter = { type: "currency", currency: data.currency };
+      const { currency, liquide, digital } = data;
+
+      if (!currency || !liquide || !digital) {
+        return res.status(400).json({ error: "Missing currency data" });
+      }
+
+      await Rate.findOneAndUpdate(
+        { type: "currency", currency: currency.toUpperCase() },
+        {
+          type: "currency",
+          currency: currency.toUpperCase(),
+          liquide,
+          digital
+        },
+        { upsert: true, returnDocument: "after" }
+      );
     }
 
     if (data.type === "gold") {
-      filter = { type: "gold" };
-    }
+      const { gold } = data;
 
-   await Rate.findOneAndUpdate(
-  filter,
-  data,
-  { upsert: true, returnDocument: "after" }
-);
+      if (!gold) {
+        return res.status(400).json({ error: "Missing gold data" });
+      }
+
+      await Rate.findOneAndUpdate(
+        { type: "gold" },
+        {
+          type: "gold",
+          gold
+        },
+        { upsert: true, returnDocument: "after" }
+      );
+    }
 
     res.json({ message: "Saved" });
 
@@ -117,41 +144,14 @@ app.post("/update-rate", async (req, res) => {
   }
 });
 
-app.get("/convert/:currency/:amount", async (req, res) => {
-  try {
-    const currency = req.params.currency.toUpperCase();
-    const amount = Number(req.params.amount);
+app.get("/last-update", async (req, res) => {
+  const last = await Rate.findOne().sort({ updatedAt: -1 });
 
-    if (isNaN(amount)) {
-      return res.status(400).json({ error: "Invalid amount" });
-    }
+  if (!last) return res.json({ lastUpdate: null });
 
-    const rate = await Rate.findOne({ type: "currency", currency });
-
-    if (!rate) {
-      return res.status(404).json({ error: "Currency not found" });
-    }
-
-    res.json({
-      currency,
-      amount,
-      liquide: {
-        buy: rate.liquide.buy,
-        sell: rate.liquide.sell,
-        total_buy: amount * rate.liquide.buy,
-        total_sell: amount * rate.liquide.sell
-      },
-      digital: {
-        buy: rate.digital.buy,
-        sell: rate.digital.sell,
-        total_buy: amount * rate.digital.buy,
-        total_sell: amount * rate.digital.sell
-      }
-    });
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.json({
+    lastUpdate: new Date(last.updatedAt).toLocaleString()
+  });
 });
 
 const PORT = process.env.PORT || 4000;
