@@ -6,13 +6,11 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
-// ✅ Connect to MongoDB (FIXED - no old options)
-mongoose.connect(process.env.MONGO_URL)
+ mongoose.connect("mongodb+srv://aymenrk:aymen123@cluster0.f5onjq1.mongodb.net/mydb?retryWrites=true&w=majority")
 .then(() => console.log("MongoDB connected ✅"))
 .catch(err => console.log("MongoDB error:", err));
 
-// ✅ Schema
-const rateSchema = new mongoose.Schema({
+ const rateSchema = new mongoose.Schema({
   from: String,
   to: String,
   rate: Number
@@ -25,7 +23,7 @@ app.get("/", (req, res) => {
   res.send("API is working 🚀");
 });
 
-// ✅ GET rate
+// ✅ GET rate FROM DATABASE
 app.get("/rate/:from/:to", async (req, res) => {
   try {
     const { from, to } = req.params;
@@ -44,7 +42,7 @@ app.get("/rate/:from/:to", async (req, res) => {
   }
 });
 
-// ✅ UPDATE / CREATE rate
+// ✅ UPDATE / CREATE rate IN DATABASE
 app.post("/update-rate", async (req, res) => {
   try {
     const { from, to, rate } = req.body;
@@ -58,7 +56,7 @@ app.post("/update-rate", async (req, res) => {
       await Rate.create({ from, to, rate });
     }
 
-    res.json({ message: "Rate saved in MongoDB ✅" });
+    res.json({ message: "Saved in MongoDB ✅" });
 
   } catch (error) {
     console.log(error);
@@ -66,7 +64,7 @@ app.post("/update-rate", async (req, res) => {
   }
 });
 
-// ✅ Dynamic port (important for Render)
+// ✅ Dynamic port (IMPORTANT for Render)
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
