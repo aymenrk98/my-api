@@ -1,15 +1,25 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 
 const app = express();
+
+// ✅ Middleware
+app.use(cors());
 app.use(express.json());
 
+/* =========================
+   ✅ MongoDB Connection
+========================= */
 mongoose.connect(
   "mongodb+srv://aymenrk:aymen123@cluster0.f5onjq1.mongodb.net/mydb?retryWrites=true&w=majority"
 )
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err));
 
+/* =========================
+   ✅ RATE SCHEMA
+========================= */
 const rateSchema = new mongoose.Schema({
   type: { type: String, required: true },
 
@@ -46,10 +56,32 @@ const rateSchema = new mongoose.Schema({
 
 const Rate = mongoose.model("Rate", rateSchema);
 
+/* =========================
+   ✅ OFFER SCHEMA (NEW)
+========================= */
+const offerSchema = new mongoose.Schema({
+  name: String,
+  phone: String,
+  currency: String,
+  type: String, // BUY or SELL
+  amount: Number,
+  price: Number
+}, {
+  timestamps: true
+});
+
+const Offer = mongoose.model("Offer", offerSchema);
+
+/* =========================
+   ✅ BASIC ROUTE
+========================= */
 app.get("/", (req, res) => {
   res.send("API is working");
 });
 
+/* =========================
+   ✅ GET ALL RATES
+========================= */
 app.get("/rates", async (req, res) => {
   const data = await Rate.find();
 
@@ -76,6 +108,9 @@ app.get("/rates", async (req, res) => {
   res.json(formatted);
 });
 
+/* =========================
+   ✅ GET ONE CURRENCY
+========================= */
 app.get("/currency/:code", async (req, res) => {
   const code = req.params.code.toUpperCase();
   const rate = await Rate.findOne({ type: "currency", currency: code });
@@ -85,6 +120,9 @@ app.get("/currency/:code", async (req, res) => {
   res.json(rate);
 });
 
+/* =========================
+   ✅ GET GOLD
+========================= */
 app.get("/gold", async (req, res) => {
   const gold = await Rate.findOne({ type: "gold" });
 
@@ -93,6 +131,9 @@ app.get("/gold", async (req, res) => {
   res.json(gold);
 });
 
+/* =========================
+   ✅ UPDATE RATE
+========================= */
 app.post("/update-rate", async (req, res) => {
   try {
     const data = req.body;
@@ -116,7 +157,7 @@ app.post("/update-rate", async (req, res) => {
           liquide,
           digital
         },
-        { upsert: true, returnDocument: "after" }
+        { upsert: true }
       );
     }
 
@@ -133,7 +174,7 @@ app.post("/update-rate", async (req, res) => {
           type: "gold",
           gold
         },
-        { upsert: true, returnDocument: "after" }
+        { upsert: true }
       );
     }
 
@@ -144,6 +185,9 @@ app.post("/update-rate", async (req, res) => {
   }
 });
 
+/* =========================
+   ✅ GET LAST UPDATE
+========================= */
 app.get("/last-update", async (req, res) => {
   const last = await Rate.findOne().sort({ updatedAt: -1 });
 
@@ -154,6 +198,38 @@ app.get("/last-update", async (req, res) => {
   });
 });
 
+/* =========================
+   🔥 OFFERS ROUTES (NEW)
+========================= */
+
+// ✅ CREATE OFFER
+app.post("/offers", async (req, res) => {
+  try {
+    const offer = new Offer(req.body);
+    await offer.save();
+
+    res.status(201).json({
+      message: "Offer saved",
+      offer
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ GET ALL OFFERS
+app.get("/offers", async (req, res) => {
+  try {
+    const offers = await Offer.find().sort({ createdAt: -1 });
+    res.json(offers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* =========================
+   🚀 START SERVER
+========================= */
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
