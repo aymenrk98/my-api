@@ -1,15 +1,26 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 
 const app = express();
+
+// 🔥 Autoriser Flutter Web
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type"],
+}));
+
 app.use(express.json());
 
+// 🔥 Connexion MongoDB
 mongoose.connect(
   "mongodb+srv://aymenrk:aymen123@cluster0.f5onjq1.mongodb.net/mydb?retryWrites=true&w=majority"
 )
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err));
 
+// 🔥 Schema
 const rateSchema = new mongoose.Schema({
   type: { type: String, required: true },
 
@@ -46,6 +57,7 @@ const rateSchema = new mongoose.Schema({
 
 const Rate = mongoose.model("Rate", rateSchema);
 
+// 🔥 Routes
 app.get("/", (req, res) => {
   res.send("API is working");
 });
@@ -154,6 +166,7 @@ app.get("/last-update", async (req, res) => {
   });
 });
 
+// 🔥 Lancement serveur
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
