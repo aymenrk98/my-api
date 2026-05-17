@@ -7,20 +7,7 @@ const app = express();
 // ------------------------------------------------
 // 🔥 CORS
 // ------------------------------------------------
-app.use(cors({
-  origin: "*",
-
-  methods: [
-    "GET",
-    "POST",
-    "PUT",
-    "DELETE"
-  ],
-
-  allowedHeaders: [
-    "Content-Type"
-  ],
-}));
+app.use(cors());
 
 app.use(express.json());
 
@@ -282,40 +269,33 @@ app.post("/update-rate", async (req, res) => {
         });
       }
 
-      const updated =
-        await Rate.findOneAndUpdate(
+      await Rate.findOneAndUpdate(
 
-          {
-            type: "currency",
+        {
+          type: "currency",
 
-            currency:
-              currency.toUpperCase()
-          },
+          currency:
+            currency.toUpperCase()
+        },
 
-          {
-            type: "currency",
+        {
+          type: "currency",
 
-            currency:
-              currency.toUpperCase(),
+          currency:
+            currency.toUpperCase(),
 
-            liquide,
+          liquide,
 
-            digital,
+          digital,
 
-            // 🔥 force update date
-            updatedAt: new Date()
-          },
+          updatedAt: new Date()
+        },
 
-          {
-            upsert: true,
+        {
+          upsert: true,
 
-            new: true
-          }
-        );
-
-      console.log(
-        "UPDATED:",
-        updated
+          new: true
+        }
       );
     }
 
@@ -333,32 +313,25 @@ app.post("/update-rate", async (req, res) => {
         });
       }
 
-      const updated =
-        await Rate.findOneAndUpdate(
+      await Rate.findOneAndUpdate(
 
-          {
-            type: "gold"
-          },
+        {
+          type: "gold"
+        },
 
-          {
-            type: "gold",
+        {
+          type: "gold",
 
-            gold,
+          gold,
 
-            // 🔥 force update date
-            updatedAt: new Date()
-          },
+          updatedAt: new Date()
+        },
 
-          {
-            upsert: true,
+        {
+          upsert: true,
 
-            new: true
-          }
-        );
-
-      console.log(
-        "UPDATED GOLD:",
-        updated
+          new: true
+        }
       );
     }
 
