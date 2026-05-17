@@ -4,24 +4,46 @@ const cors = require("cors");
 
 const app = express();
 
+// ------------------------------------------------
 // 🔥 CORS
+// ------------------------------------------------
 app.use(cors({
   origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type"],
+
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE"
+  ],
+
+  allowedHeaders: [
+    "Content-Type"
+  ],
 }));
 
 app.use(express.json());
 
-// 🔥 MongoDB Connection
+// ------------------------------------------------
+// 🔥 MONGODB
+// ------------------------------------------------
 mongoose.connect(
   "mongodb+srv://aymenrk:aymen123@cluster0.f5onjq1.mongodb.net/mydb?retryWrites=true&w=majority"
 )
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.log(err));
 
-// 🔥 Schema
+.then(() => {
+  console.log("MongoDB connected");
+})
+
+.catch((err) => {
+  console.log(err);
+});
+
+// ------------------------------------------------
+// 🔥 SCHEMA
+// ------------------------------------------------
 const rateSchema = new mongoose.Schema({
+
   type: {
     type: String,
     required: true
@@ -43,6 +65,7 @@ const rateSchema = new mongoose.Schema({
   },
 
   gold: {
+
     local: {
       buy: Number,
       sell: Number
@@ -72,6 +95,7 @@ const Rate = mongoose.model(
 // 🔥 ROOT
 // ------------------------------------------------
 app.get("/", (req, res) => {
+
   res.send("API is working");
 });
 
@@ -80,26 +104,35 @@ app.get("/", (req, res) => {
 // ------------------------------------------------
 app.get("/rates", async (req, res) => {
 
-  // 🔥 Disable cache
-  res.set({
-    "Cache-Control":
-      "no-store, no-cache, must-revalidate, proxy-revalidate",
-
-    "Pragma": "no-cache",
-
-    "Expires": "0",
-
-    "Surrogate-Control": "no-store"
-  });
-
   try {
+
+    // 🔥 disable cache
+    res.set({
+
+      "Cache-Control":
+        "no-store, no-cache, must-revalidate, proxy-revalidate",
+
+      "Pragma":
+        "no-cache",
+
+      "Expires":
+        "0",
+
+      "Surrogate-Control":
+        "no-store"
+    });
+
     const data = await Rate.find();
 
-    const formatted = data.map(r => {
+    const formatted = data.map((r) => {
 
-      // 🔥 Currency
+      // ============================================
+      // 🔥 CURRENCY
+      // ============================================
       if (r.type === "currency") {
+
         return {
+
           type: "currency",
 
           currency: r.currency,
@@ -108,22 +141,28 @@ app.get("/rates", async (req, res) => {
 
           digital: r.digital,
 
-          updatedAt: new Date(
-            r.updatedAt
-          ).toLocaleString()
+          updatedAt:
+            new Date(
+              r.updatedAt
+            ).toLocaleString()
         };
       }
 
-      // 🔥 Gold
+      // ============================================
+      // 🔥 GOLD
+      // ============================================
       if (r.type === "gold") {
+
         return {
+
           type: "gold",
 
           gold: r.gold,
 
-          updatedAt: new Date(
-            r.updatedAt
-          ).toLocaleString()
+          updatedAt:
+            new Date(
+              r.updatedAt
+            ).toLocaleString()
         };
       }
     });
@@ -144,15 +183,20 @@ app.get("/rates", async (req, res) => {
 app.get("/currency/:code", async (req, res) => {
 
   try {
+
     const code =
       req.params.code.toUpperCase();
 
-    const rate = await Rate.findOne({
-      type: "currency",
-      currency: code
-    });
+    const rate =
+      await Rate.findOne({
+
+        type: "currency",
+
+        currency: code
+      });
 
     if (!rate) {
+
       return res.status(404).json({
         error: "Not found"
       });
@@ -174,11 +218,14 @@ app.get("/currency/:code", async (req, res) => {
 app.get("/gold", async (req, res) => {
 
   try {
-    const gold = await Rate.findOne({
-      type: "gold"
-    });
+
+    const gold =
+      await Rate.findOne({
+        type: "gold"
+      });
 
     if (!gold) {
+
       return res.status(404).json({
         error: "Gold not found"
       });
@@ -203,14 +250,18 @@ app.post("/update-rate", async (req, res) => {
 
     const data = req.body;
 
+    // ============================================
+    // 🔥 VALIDATION
+    // ============================================
     if (!data.type) {
+
       return res.status(400).json({
         error: "Type required"
       });
     }
 
     // ============================================
-    // 🔥 CURRENCY
+    // 🔥 UPDATE CURRENCY
     // ============================================
     if (data.type === "currency") {
 
@@ -225,69 +276,89 @@ app.post("/update-rate", async (req, res) => {
         !liquide ||
         !digital
       ) {
+
         return res.status(400).json({
           error: "Missing currency data"
         });
       }
 
-      await Rate.findOneAndUpdate(
+      const updated =
+        await Rate.findOneAndUpdate(
 
-        {
-          type: "currency",
+          {
+            type: "currency",
 
-          currency:
-            currency.toUpperCase()
-        },
+            currency:
+              currency.toUpperCase()
+          },
 
-        {
-          type: "currency",
+          {
+            type: "currency",
 
-          currency:
-            currency.toUpperCase(),
+            currency:
+              currency.toUpperCase(),
 
-          liquide,
+            liquide,
 
-          digital
-        },
+            digital,
 
-        {
-          upsert: true,
+            // 🔥 force update date
+            updatedAt: new Date()
+          },
 
-          new: true
-        }
+          {
+            upsert: true,
+
+            new: true
+          }
+        );
+
+      console.log(
+        "UPDATED:",
+        updated
       );
     }
 
     // ============================================
-    // 🔥 GOLD
+    // 🔥 UPDATE GOLD
     // ============================================
     if (data.type === "gold") {
 
       const { gold } = data;
 
       if (!gold) {
+
         return res.status(400).json({
           error: "Missing gold data"
         });
       }
 
-      await Rate.findOneAndUpdate(
+      const updated =
+        await Rate.findOneAndUpdate(
 
-        {
-          type: "gold"
-        },
+          {
+            type: "gold"
+          },
 
-        {
-          type: "gold",
+          {
+            type: "gold",
 
-          gold
-        },
+            gold,
 
-        {
-          upsert: true,
+            // 🔥 force update date
+            updatedAt: new Date()
+          },
 
-          new: true
-        }
+          {
+            upsert: true,
+
+            new: true
+          }
+        );
+
+      console.log(
+        "UPDATED GOLD:",
+        updated
       );
     }
 
@@ -310,19 +381,25 @@ app.get("/last-update", async (req, res) => {
 
   try {
 
-    const last = await Rate.findOne()
-      .sort({ updatedAt: -1 });
+    const last =
+      await Rate.findOne()
+      .sort({
+        updatedAt: -1
+      });
 
     if (!last) {
+
       return res.json({
         lastUpdate: null
       });
     }
 
     res.json({
-      lastUpdate: new Date(
-        last.updatedAt
-      ).toLocaleString()
+
+      lastUpdate:
+        new Date(
+          last.updatedAt
+        ).toLocaleString()
     });
 
   } catch (error) {
@@ -340,6 +417,7 @@ const PORT =
   process.env.PORT || 4000;
 
 app.listen(PORT, () => {
+
   console.log(
     `Server running on port ${PORT}`
   );
