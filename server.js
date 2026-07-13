@@ -17,12 +17,27 @@ app.use(express.json());
 // ------------------------------------------------
 // 🔥 FIREBASE ADMIN (pour les notifications push)
 // ------------------------------------------------
-// 1) Va sur https://console.firebase.google.com/
-// 2) Ton projet -> ⚙️ Paramètres du projet -> Comptes de service
-// 3) "Générer une nouvelle clé privée" -> télécharge le JSON
-// 4) Place ce fichier ici : serviceAccountKey.json (à côté de ce fichier)
-//    ⚠️ Ajoute-le à .gitignore, ne le commit JAMAIS.
-const serviceAccount = require("./serviceAccountKey.json");
+// En LOCAL : place le fichier serviceAccountKey.json à côté de ce fichier.
+// Sur RENDER (ou tout hébergeur sans upload de fichier) : colle le contenu
+// JSON entier de ce fichier dans une variable d'environnement nommée
+// FIREBASE_SERVICE_ACCOUNT (Render -> ton service -> Environment -> Add
+// Environment Variable). Le code choisit automatiquement la bonne source.
+let serviceAccount;
+
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+} else {
+  try {
+    serviceAccount = require("./serviceAccountKey.json");
+  } catch (e) {
+    throw new Error(
+      "Clé Firebase introuvable. En local, ajoute serviceAccountKey.json " +
+        "à côté de server.js. Sur Render, ajoute une variable " +
+        "d'environnement FIREBASE_SERVICE_ACCOUNT contenant le JSON complet " +
+        "de ta clé de service (Render -> ton service -> Environment)."
+    );
+  }
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
