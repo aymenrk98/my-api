@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // ------------------------------------------------
-// 🔥 FIREBASE ADMIN (pour les notifications push)
+// 🔥 FIREBASE ADMIN (pour les notifications push)   fghfgh
 // ------------------------------------------------
 // En LOCAL : place le fichier serviceAccountKey.json à côté de ce fichier.
 // Sur RENDER (ou tout hébergeur sans upload de fichier) : colle le contenu
