@@ -51,18 +51,18 @@ const rateSchema = new mongoose.Schema({
     sell: Number
   },
 
-  gold: {
+  buy: Number,
+  sell: Number,
 
+  gold: {
     local: {
       buy: Number,
       sell: Number
     },
-
     importation: {
       buy: Number,
       sell: Number
     },
-
     casser: {
       buy: Number,
       sell: Number
