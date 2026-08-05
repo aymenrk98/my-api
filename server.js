@@ -152,6 +152,26 @@ app.get("/rates", async (req, res) => {
             ).toLocaleString()
         };
       }
+
+      // ============================================
+      // 🔥 USDT
+      // ============================================
+      if (r.type === "usdt") {
+
+        return {
+
+          type: "usdt",
+
+          buy: r.buy,
+
+          sell: r.sell,
+
+          updatedAt:
+            new Date(
+              r.updatedAt
+            ).toLocaleString()
+        };
+      }
     });
 
     res.json(formatted);
@@ -219,6 +239,35 @@ app.get("/gold", async (req, res) => {
     }
 
     res.json(gold);
+
+  } catch (error) {
+
+    res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
+// ------------------------------------------------
+// 🔥 GET USDT
+// ------------------------------------------------
+app.get("/usdt", async (req, res) => {
+
+  try {
+
+    const usdt =
+      await Rate.findOne({
+        type: "usdt"
+      });
+
+    if (!usdt) {
+
+      return res.status(404).json({
+        error: "USDT not found"
+      });
+    }
+
+    res.json(usdt);
 
   } catch (error) {
 
@@ -323,6 +372,47 @@ app.post("/update-rate", async (req, res) => {
           type: "gold",
 
           gold,
+
+          updatedAt: new Date()
+        },
+
+        {
+          upsert: true,
+
+          new: true
+        }
+      );
+    }
+
+    // ============================================
+    // 🔥 UPDATE USDT
+    // ============================================
+    if (data.type === "usdt") {
+
+      const { buy, sell } = data;
+
+      if (
+        buy === undefined ||
+        sell === undefined
+      ) {
+
+        return res.status(400).json({
+          error: "Missing USDT data"
+        });
+      }
+
+      await Rate.findOneAndUpdate(
+
+        {
+          type: "usdt"
+        },
+
+        {
+          type: "usdt",
+
+          buy,
+
+          sell,
 
           updatedAt: new Date()
         },
